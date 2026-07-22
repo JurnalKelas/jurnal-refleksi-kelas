@@ -361,10 +361,11 @@ st.divider()
 with st.form("pennant_form", clear_on_submit=True):
     st.subheader(t["student_profile"])
     
+    # --- TAMBAHAN MAPEL BAHASA JAWA & ICT ---
     daftar_mapel = [
         "Matematika", "Bahasa Indonesia", "Bahasa Inggris", "Ilmu Pengetahuan Alam (IPA)", 
         "Ilmu Pengetahuan Sosial (IPS)", "Pendidikan Agama", "PPKn", 
-        "Seni Budaya", "PJOK", "Prakarya", "Bimbingan Konseling", "Lainnya"
+        "Seni Budaya", "PJOK", "Prakarya", "Bahasa Jawa", "ICT", "Bimbingan Konseling", "Lainnya"
     ]
     pilihan_mapel = st.selectbox(t["subject"], daftar_mapel)
     
@@ -432,6 +433,8 @@ kunci_guru = {
     "passSENI": "Seni Budaya",
     "passPJOK": "PJOK",
     "passPRAKARYA": "Prakarya",
+    "passJAWA": "Bahasa Jawa",
+    "passICT": "ICT",
     "passBK": "Bimbingan Konseling",
     "adminSUPER": "Semua Mapel" # Akses Kepala Sekolah/Admin
 }
