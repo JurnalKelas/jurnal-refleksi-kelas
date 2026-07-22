@@ -105,11 +105,10 @@ if language == "Indonesia":
         "gallery_header": "📌 Galeri Jurnal Kelas",
         "gallery_desc": "Klik pada nama siswa untuk membaca detail refleksinya.",
         "export_header": "💾 Export Laporan Kelas",
-        "export_desc": "Unduh rangkuman seluruh jurnal refleksi siswa yang sesuai dengan filter Anda.",
-        "btn_dl_all": "📥 Download Laporan (PDF)",
-        "btn_dl_csv": "📥 Download Data Excel (CSV)",
+        "export_desc": "Unduh rangkuman singkat jurnal refleksi seluruh siswa hari ini.",
+        "btn_dl_all": "📥 Download Rangkuman Kelas (PDF)",
         "no_data": "Belum ada jurnal yang masuk. Silakan tunggu siswa mengisi.",
-        "pdf_class_title": "Laporan Jurnal Refleksi - {}", 
+        "pdf_class_title": "Laporan Jurnal Refleksi - {}", # Diubah agar bisa disisipkan mapel
         "pdf_ind_title": "Portofolio Jurnal: {}"
     }
 else:
@@ -158,11 +157,10 @@ else:
         "gallery_header": "📌 Class Journal Gallery",
         "gallery_desc": "Click on a student's name to read their reflection details.",
         "export_header": "💾 Export Class Report",
-        "export_desc": "Download a full summary of all students' reflection journals based on your filter.",
-        "btn_dl_all": "📥 Download Report (PDF)",
-        "btn_dl_csv": "📥 Download Excel Data (CSV)",
+        "export_desc": "Download a brief summary of all students' reflection journals today.",
+        "btn_dl_all": "📥 Download Class Summary (PDF)",
         "no_data": "No journals submitted yet.",
-        "pdf_class_title": "Reflection Journal Report - {}", 
+        "pdf_class_title": "Reflection Journal Report - {}", # Diubah agar bisa disisipkan mapel
         "pdf_ind_title": "Journal Portfolio: {}"
     }
 
@@ -174,6 +172,8 @@ def generate_pdf_report(df, feeling_counts, teks, nama_mapel):
     pdf.add_page()
     
     clean_mapel = str(nama_mapel).encode('ascii', 'ignore').decode('ascii')
+    
+    # Memasukkan nama mapel langsung ke dalam judul laporan
     judul_dinamis = teks["pdf_class_title"].format(clean_mapel)
     
     pdf.set_font("Arial", "B", 16)
@@ -196,31 +196,20 @@ def generate_pdf_report(df, feeling_counts, teks, nama_mapel):
     pdf.cell(200, 10, txt=teks["gallery_header"].replace("📌 ", ""), ln=True)
     
     for idx, row in df.iterrows():
-        # Menarik semua data yang diinput
         name = str(row['name']).encode('ascii', 'ignore').decode('ascii')
         kelas = str(row['kelas']).encode('ascii', 'ignore').decode('ascii')
         absen = str(row['absen']).encode('ascii', 'ignore').decode('ascii')
         mapel_murid = str(row['mata_pelajaran']).encode('ascii', 'ignore').decode('ascii')
         feeling = str(row['feeling']).encode('ascii', 'ignore').decode('ascii')
-        
-        belajar = str(row['belajar_tentang']).encode('ascii', 'ignore').decode('ascii')
-        paham = str(row['sudah_paham']).encode('ascii', 'ignore').decode('ascii')
-        sulit = str(row['kesulitan']).encode('ascii', 'ignore').decode('ascii')
-        atasi = str(row['cara_atasi']).encode('ascii', 'ignore').decode('ascii')
-        suka = str(row['hal_disukai']).encode('ascii', 'ignore').decode('ascii')
+        kesulitan = str(row['kesulitan']).encode('ascii', 'ignore').decode('ascii')
         target = str(row['target_berikutnya']).encode('ascii', 'ignore').decode('ascii')
         
-        # Mencetak semua jawaban ke dalam PDF Laporan Kelas
         pdf.set_font("Arial", "B", 10)
         pdf.multi_cell(0, 8, txt=f"{idx+1}. {name} ({kelas} - {absen}) | {mapel_murid} | Mood: {feeling}")
         pdf.set_font("Arial", "", 10)
-        pdf.multi_cell(0, 6, txt=f"   - {teks['q1']} {belajar}")
-        pdf.multi_cell(0, 6, txt=f"   - {teks['q2']} {paham}")
-        pdf.multi_cell(0, 6, txt=f"   - {teks['q3']} {sulit}")
-        pdf.multi_cell(0, 6, txt=f"   - {teks['q4']} {atasi}")
-        pdf.multi_cell(0, 6, txt=f"   - {teks['q5']} {suka}")
-        pdf.multi_cell(0, 6, txt=f"   - {teks['q6']} {target}")
-        pdf.ln(5)
+        pdf.multi_cell(0, 6, txt=f"   - {teks['difficulty']} {kesulitan}")
+        pdf.multi_cell(0, 6, txt=f"   - {teks['target']} {target}")
+        pdf.ln(3)
 
     return pdf.output(dest='S').encode('latin-1')
 
@@ -501,27 +490,13 @@ if not df_students_master.empty:
             st.subheader(t["export_header"])
             st.write(t["export_desc"])
             
-            # --- TAMBAHAN TOMBOL DOWNLOAD EXCEL / CSV ---
-            col_pdf, col_csv = st.columns(2)
-            
-            with col_pdf:
-                pdf_data = generate_pdf_report(df_students, feeling_counts, t, filter_pilihan)
-                st.download_button(
-                    label=t["btn_dl_all"],
-                    data=pdf_data,
-                    file_name=f'Laporan_Refleksi_{filter_pilihan}.pdf',
-                    mime='application/pdf'
-                )
-                
-            with col_csv:
-                # Membuat format CSV dari tabel data
-                csv_data = df_students.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label=t["btn_dl_csv"],
-                    data=csv_data,
-                    file_name=f'Data_Mentah_{filter_pilihan}.csv',
-                    mime='text/csv'
-                )
+            pdf_data = generate_pdf_report(df_students, feeling_counts, t, filter_pilihan)
+            st.download_button(
+                label=t["btn_dl_all"],
+                data=pdf_data,
+                file_name=f'Class_Reflection_{filter_pilihan}.pdf',
+                mime='application/pdf'
+            )
             
     elif password_guru != "":
         st.error(t["pass_error"])
