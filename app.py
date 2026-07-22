@@ -7,7 +7,7 @@ import os
 import datetime
 
 # ==========================================
-# BAGIAN 1: PENGATURAN DATABASE (SQLITE) - VERSI 7 (TAMBAH MAPEL)
+# BAGIAN 1: PENGATURAN DATABASE (SQLITE) - VERSI 7 
 # ==========================================
 def init_db():
     conn = sqlite3.connect('jurnal_sekolah_v7.db')
@@ -108,7 +108,7 @@ if language == "Indonesia":
         "export_desc": "Unduh rangkuman singkat jurnal refleksi seluruh siswa hari ini.",
         "btn_dl_all": "📥 Download Rangkuman Kelas (PDF)",
         "no_data": "Belum ada jurnal yang masuk. Silakan tunggu siswa mengisi.",
-        "pdf_class_title": "Laporan Jurnal Refleksi Kelas",
+        "pdf_class_title": "Laporan Jurnal Refleksi - {}", # Diubah agar bisa disisipkan mapel
         "pdf_ind_title": "Portofolio Jurnal: {}"
     }
 else:
@@ -160,7 +160,7 @@ else:
         "export_desc": "Download a brief summary of all students' reflection journals today.",
         "btn_dl_all": "📥 Download Class Summary (PDF)",
         "no_data": "No journals submitted yet.",
-        "pdf_class_title": "Class Reflection Journal Report",
+        "pdf_class_title": "Reflection Journal Report - {}", # Diubah agar bisa disisipkan mapel
         "pdf_ind_title": "Journal Portfolio: {}"
     }
 
@@ -171,12 +171,13 @@ def generate_pdf_report(df, feeling_counts, teks, nama_mapel):
     pdf = FPDF()
     pdf.add_page()
     
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(200, 10, txt=teks["pdf_class_title"], ln=True, align='C')
-    
-    pdf.set_font("Arial", "I", 12)
     clean_mapel = str(nama_mapel).encode('ascii', 'ignore').decode('ascii')
-    pdf.cell(200, 8, txt=f"Filter: {clean_mapel}", ln=True, align='C')
+    
+    # Memasukkan nama mapel langsung ke dalam judul laporan
+    judul_dinamis = teks["pdf_class_title"].format(clean_mapel)
+    
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(200, 10, txt=judul_dinamis, ln=True, align='C')
     pdf.ln(5)
 
     fig, ax = plt.subplots(figsize=(6, 4))
@@ -340,7 +341,6 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- FITUR LOGO SEKOLAH & JUDUL ---
 col_logo, col_judul = st.columns([1, 4])
 
 with col_logo:
@@ -373,7 +373,6 @@ with st.form("pennant_form", clear_on_submit=True):
         
     name = st.text_input(t["name"])
     
-    # --- FITUR BARU: DAFTAR KELAS 7, 8, 9 ---
     col_kelas, col_absen = st.columns(2)
     with col_kelas:
         daftar_kelas = [
