@@ -10,7 +10,6 @@ import datetime
 # BAGIAN 1: PENGATURAN DATABASE (SQLITE) - VERSI 7 (TAMBAH MAPEL)
 # ==========================================
 def init_db():
-    # Menggunakan nama file DB baru agar tidak bentrok dengan tabel lama
     conn = sqlite3.connect('jurnal_sekolah_v7.db')
     c = conn.cursor()
     c.execute('''
@@ -62,7 +61,7 @@ with st.sidebar:
     
 if language == "Indonesia":
     t = {
-        "title": "📝 Learning Reflection Journal",
+        "title": "Learning Reflection Journal",
         "subtitle": "Mari sejenak merefleksikan apa yang sudah kita pelajari hari ini.",
         "teacher_settings": "🎨 Pengaturan Guru",
         "bg_color": "Pilih Warna Latar Web:",
@@ -114,7 +113,7 @@ if language == "Indonesia":
     }
 else:
     t = {
-        "title": "📝 Learning Reflection Journal",
+        "title": "Learning Reflection Journal",
         "subtitle": "Let's take a moment to reflect on what we have learned today.",
         "teacher_settings": "🎨 Teacher Settings",
         "bg_color": "Select Web Background Color:",
@@ -175,7 +174,6 @@ def generate_pdf_report(df, feeling_counts, teks, nama_mapel):
     pdf.set_font("Arial", "B", 16)
     pdf.cell(200, 10, txt=teks["pdf_class_title"], ln=True, align='C')
     
-    # Tambahan Keterangan Mapel di PDF Laporan Kelas
     pdf.set_font("Arial", "I", 12)
     clean_mapel = str(nama_mapel).encode('ascii', 'ignore').decode('ascii')
     pdf.cell(200, 8, txt=f"Filter: {clean_mapel}", ln=True, align='C')
@@ -257,7 +255,6 @@ def generate_individual_pdf(student_name, student_data, grafik_siswa, teks):
         target = str(row['target_berikutnya']).encode('ascii', 'ignore').decode('ascii')
         
         pdf.set_font("Arial", "B", 10)
-        # Menambahkan informasi Mapel pada log individu
         pdf.multi_cell(0, 6, txt=f"[{waktu}] {mapel_murid} | Mood: {feeling}")
         pdf.set_font("Arial", "", 10)
         pdf.multi_cell(0, 5, txt=f"{teks['q1']} {belajar}")
@@ -292,9 +289,9 @@ def generate_guide_pdf(lang):
         pdf.cell(200, 8, txt="BAGIAN B: Panduan Untuk Guru (Cara Mengelola Data)", ln=True)
         pdf.set_font("Arial", "", 11)
         pdf.multi_cell(0, 6, txt="1. Di area guru (bawah layar), masukkan kata sandi (password).")
-        pdf.multi_cell(0, 6, txt="2. Gunakan 'Filter Mata Pelajaran' untuk memisahkan data mapel Anda dari mapel guru lain.")
-        pdf.multi_cell(0, 6, txt="3. Grafik, galeri, dan PDF akan otomatis menyesuaikan dengan mapel yang Anda pilih.")
-        pdf.multi_cell(0, 6, txt="4. Klik 'Download Rangkuman Kelas' untuk menyimpan rekap ke laptop.")
+        pdf.multi_cell(0, 6, txt="2. Gunakan 'Filter Mata Pelajaran' untuk memisahkan data.")
+        pdf.multi_cell(0, 6, txt="3. Grafik, galeri, dan PDF akan otomatis menyesuaikan mapel.")
+        pdf.multi_cell(0, 6, txt="4. Klik 'Download Rangkuman Kelas' untuk menyimpan rekap.")
     else:
         pdf.cell(200, 10, txt="Learning Reflection Journal - User Guide", ln=True, align='C')
         pdf.ln(5)
@@ -303,7 +300,7 @@ def generate_guide_pdf(lang):
         pdf.cell(200, 8, txt="PART A: Guide for Students", ln=True)
         pdf.set_font("Arial", "", 11)
         pdf.multi_cell(0, 6, txt="1. Open the app and select your language in the sidebar.")
-        pdf.multi_cell(0, 6, txt="2. Fill in your profile and select the Subject you just attended.")
+        pdf.multi_cell(0, 6, txt="2. Fill in your profile and select the Subject.")
         pdf.multi_cell(0, 6, txt="3. Answer the reflection questions and submit.")
         pdf.ln(5)
         
@@ -311,8 +308,8 @@ def generate_guide_pdf(lang):
         pdf.cell(200, 8, txt="PART B: Guide for Teachers", ln=True)
         pdf.set_font("Arial", "", 11)
         pdf.multi_cell(0, 6, txt="1. In the teacher area, enter the correct password.")
-        pdf.multi_cell(0, 6, txt="2. Use the 'Subject Filter' to separate your class data from others.")
-        pdf.multi_cell(0, 6, txt="3. Charts, gallery, and PDFs will automatically adjust to the selected subject.")
+        pdf.multi_cell(0, 6, txt="2. Use the 'Subject Filter' to separate your class data.")
+        pdf.multi_cell(0, 6, txt="3. Charts, gallery, and PDFs will automatically adjust.")
         pdf.multi_cell(0, 6, txt="4. Click 'Download Class Summary' to save the report.")
 
     return pdf.output(dest='S').encode('latin-1')
@@ -343,13 +340,24 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-st.title(t["title"])
-st.write(t["subtitle"])
+# --- FITUR LOGO SEKOLAH & JUDUL ---
+col_logo, col_judul = st.columns([1, 4])
+
+with col_logo:
+    if os.path.exists("logo.png"):
+        st.image("logo.png", use_column_width=True)
+    elif os.path.exists("logo.jpg"):
+        st.image("logo.jpg", use_column_width=True)
+
+with col_judul:
+    st.title(t["title"])
+    st.write(t["subtitle"])
+
+st.divider()
 
 with st.form("pennant_form", clear_on_submit=True):
     st.subheader(t["student_profile"])
     
-    # --- FITUR BARU: PILIHAN MATA PELAJARAN ---
     daftar_mapel = [
         "Matematika", "Bahasa Indonesia", "Bahasa Inggris", "Ilmu Pengetahuan Alam (IPA)", 
         "Ilmu Pengetahuan Sosial (IPS)", "Pendidikan Agama", "PPKn", 
@@ -365,9 +373,15 @@ with st.form("pennant_form", clear_on_submit=True):
         
     name = st.text_input(t["name"])
     
+    # --- FITUR BARU: DAFTAR KELAS 7, 8, 9 ---
     col_kelas, col_absen = st.columns(2)
     with col_kelas:
-        kelas = st.selectbox(t["class"], ["7A", "7B", "7C", "7D", "7E", "7F"])
+        daftar_kelas = [
+            "7A", "7B", "7C", "7D", "7E", "7F",
+            "8A", "8B", "8C", "8D", "8E", "8F",
+            "9A", "9B", "9C", "9D", "9E", "9F"
+        ]
+        kelas = st.selectbox(t["class"], daftar_kelas)
     with col_absen:
         absen = st.number_input(t["absen"], min_value=1, max_value=50, step=1)
     
@@ -392,13 +406,12 @@ with st.form("pennant_form", clear_on_submit=True):
             waktu_str = waktu.strftime("%H:%M")
             waktu_lengkap_str = f"{tanggal_str} {waktu_str}"
             
-            # Memasukkan mapel ke dalam fungsi insert_data
             insert_data(waktu_lengkap_str, pilihan_mapel, name, kelas, str(absen), feeling, 
                         belajar_tentang, sudah_paham, kesulitan, cara_atasi, hal_disukai, target_berikutnya)
             st.success(t["success"].format(name))
 
 # ==========================================
-# BAGIAN 5: ANALITIK & UNDUH PDF DENGAN PASSWORD & FILTER
+# BAGIAN 5: ANALITIK & UNDUH PDF 
 # ==========================================
 st.divider()
 st.header(t["board_header"])
@@ -416,26 +429,21 @@ if not df_students_master.empty:
         st.success(t["pass_success"])
         st.divider()
         
-        # --- FITUR BARU: FILTER MATA PELAJARAN UNTUK GURU ---
         daftar_mapel_terisi = df_students_master['mata_pelajaran'].unique().tolist()
         filter_pilihan = st.selectbox(t["filter_mapel"], [t["all_mapel"]] + daftar_mapel_terisi)
         
-        # Proses penyaringan data berdasarkan mapel yang dipilih
         if filter_pilihan != t["all_mapel"]:
             df_students = df_students_master[df_students_master['mata_pelajaran'] == filter_pilihan]
         else:
             df_students = df_students_master
-        # ----------------------------------------------------
         
         if df_students.empty:
             st.info(f"Belum ada data untuk mata pelajaran {filter_pilihan}.")
         else:
-            # Grafik disesuaikan dengan mapel yang difilter
             st.subheader(t["chart_header"])
             feeling_counts = df_students['feeling'].value_counts()
             st.bar_chart(feeling_counts)
             
-            # 1. Bagian Unduh Portofolio Individu
             st.divider()
             st.header(t["print_header"])
             st.write(t["print_desc"])
@@ -465,7 +473,6 @@ if not df_students_master.empty:
                 mime='application/pdf'
             )
             
-            # 2. Bagian Detail Galeri Kelas
             st.divider()
             st.subheader(t["gallery_header"])
             st.write(t["gallery_desc"])
@@ -480,7 +487,6 @@ if not df_students_master.empty:
                     st.write(f"**{t['q5']}** {row['hal_disukai']}")
                     st.write(f"**{t['q6']}** {row['target_berikutnya']}")
                         
-            # 3. Bagian Unduh Rangkuman Kelas
             st.divider()
             st.subheader(t["export_header"])
             st.write(t["export_desc"])
