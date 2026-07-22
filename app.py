@@ -12,6 +12,7 @@ import datetime
 def init_db():
     conn = sqlite3.connect('jurnal_sekolah_v7.db')
     c = conn.cursor()
+    # Tabel 1: Data Refleksi Siswa
     c.execute('''
         CREATE TABLE IF NOT EXISTS reflections (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,6 +30,37 @@ def init_db():
             target_berikutnya TEXT
         )
     ''')
+    
+    # Tabel 2: Sistem Autentikasi (Password Guru)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS guru_auth (
+            mata_pelajaran TEXT PRIMARY KEY,
+            password TEXT UNIQUE
+        )
+    ''')
+    
+    # Mengecek apakah tabel password masih kosong. Jika kosong, isi dengan password bawaan.
+    c.execute('SELECT COUNT(*) FROM guru_auth')
+    if c.fetchone()[0] == 0:
+        password_bawaan = [
+            ("Matematika", "passMTK"),
+            ("Bahasa Indonesia", "passBINDO"),
+            ("Bahasa Inggris", "passBING"),
+            ("Ilmu Pengetahuan Alam (IPA)", "passIPA"),
+            ("Ilmu Pengetahuan Sosial (IPS)", "passIPS"),
+            ("Pendidikan Agama", "passAGAMA"),
+            ("PPKn", "passPKN"),
+            ("Seni Budaya", "passSENI"),
+            ("PJOK", "passPJOK"),
+            ("Prakarya", "passPRAKARYA"),
+            ("Bahasa Jawa", "passJAWA"),
+            ("ICT", "passICT"),
+            ("Bimbingan Konseling", "passBK"),
+            ("Semua Mapel", "adminSUPER")
+        ]
+        # Mengabaikan error jika ada duplikat saat inisiasi
+        c.executemany('INSERT OR IGNORE INTO guru_auth (mata_pelajaran, password) VALUES (?, ?)', password_bawaan)
+        
     conn.commit()
     conn.close()
 
@@ -47,6 +79,29 @@ def get_all_data():
     df = pd.read_sql_query("SELECT * FROM reflections", conn)
     conn.close()
     return df
+
+# Fungsi untuk mencocokkan password dengan mapel
+def get_mapel_by_password(pwd):
+    conn = sqlite3.connect('jurnal_sekolah_v7.db')
+    c = conn.cursor()
+    c.execute('SELECT mata_pelajaran FROM guru_auth WHERE password = ?', (pwd,))
+    result = c.fetchone()
+    conn.close()
+    return result[0] if result else None
+
+# Fungsi untuk mengubah password di database
+def update_password(mapel, new_pwd):
+    conn = sqlite3.connect('jurnal_sekolah_v7.db')
+    c = conn.cursor()
+    try:
+        c.execute('UPDATE guru_auth SET password = ? WHERE mata_pelajaran = ?', (new_pwd, mapel))
+        conn.commit()
+        sukses = True
+    except sqlite3.IntegrityError:
+        # Akan error jika password baru ternyata sudah dipakai oleh mapel lain (karena sifat UNIQUE)
+        sukses = False
+    conn.close()
+    return sukses
 
 init_db()
 
@@ -108,7 +163,13 @@ if language == "Indonesia":
         "btn_dl_csv": "📥 Download Data Excel (CSV)",
         "no_data": "Belum ada data masuk untuk mata pelajaran ini.",
         "pdf_class_title": "Laporan Jurnal Refleksi - {}", 
-        "pdf_ind_title": "Portofolio Jurnal: {}"
+        "pdf_ind_title": "Portofolio Jurnal: {}",
+        "change_pass_header": "⚙️ Pengaturan: Ubah Kata Sandi",
+        "change_pass_desc": "Anda dapat mengganti kata sandi bawaan dengan kata sandi rahasia Anda sendiri.",
+        "new_pass_input": "Masukkan Kata Sandi Baru:",
+        "btn_save_pass": "Simpan Kata Sandi Baru",
+        "pass_changed_success": "Berhasil! Sandi Anda telah diubah. Halaman akan dimuat ulang, silakan masukkan sandi baru Anda.",
+        "pass_changed_error": "Gagal! Kata sandi ini sudah digunakan oleh guru lain. Pilih sandi kombinasi lain."
     }
 else:
     t = {
@@ -159,7 +220,13 @@ else:
         "btn_dl_csv": "📥 Download Excel Data (CSV)",
         "no_data": "No data submitted yet for this subject.",
         "pdf_class_title": "Reflection Journal Report - {}", 
-        "pdf_ind_title": "Journal Portfolio: {}"
+        "pdf_ind_title": "Journal Portfolio: {}",
+        "change_pass_header": "⚙️ Settings: Change Password",
+        "change_pass_desc": "You can change the default password to your own secret password.",
+        "new_pass_input": "Enter New Password:",
+        "btn_save_pass": "Save New Password",
+        "pass_changed_success": "Success! Your password has been changed. Please log in again with the new password.",
+        "pass_changed_error": "Failed! This password is already in use by another subject. Please choose another combination."
     }
 
 # ==========================================
@@ -294,8 +361,8 @@ def generate_guide_pdf(lang):
         pdf.set_font("Arial", "B", 12)
         pdf.cell(200, 8, txt="BAGIAN B: Panduan Untuk Guru (Cara Mengelola Data)", ln=True)
         pdf.set_font("Arial", "", 11)
-        pdf.multi_cell(0, 6, txt="1. Di area guru (bawah layar), masukkan kata sandi khusus mapel Anda.")
-        pdf.multi_cell(0, 6, txt="2. Aplikasi akan otomatis mengunci dan hanya menampilkan data kelas Anda.")
+        pdf.multi_cell(0, 6, txt="1. Di area guru, masukkan kata sandi khusus mapel Anda.")
+        pdf.multi_cell(0, 6, txt="2. Anda dapat mengubah kata sandi default di menu Pengaturan Akun.")
         pdf.multi_cell(0, 6, txt="3. Anda bisa mengunduh portofolio siswa atau laporan kelas (PDF/Excel).")
     else:
         pdf.cell(200, 10, txt="Learning Reflection Journal - User Guide", ln=True, align='C')
@@ -313,7 +380,7 @@ def generate_guide_pdf(lang):
         pdf.cell(200, 8, txt="PART B: Guide for Teachers", ln=True)
         pdf.set_font("Arial", "", 11)
         pdf.multi_cell(0, 6, txt="1. In the teacher area, enter your specific subject password.")
-        pdf.multi_cell(0, 6, txt="2. The app will automatically display only your class data.")
+        pdf.multi_cell(0, 6, txt="2. You can change your default password in the Account Settings menu.")
         pdf.multi_cell(0, 6, txt="3. You can download portfolios or class reports (PDF/Excel).")
 
     return pdf.output(dest='S').encode('latin-1')
@@ -361,7 +428,6 @@ st.divider()
 with st.form("pennant_form", clear_on_submit=True):
     st.subheader(t["student_profile"])
     
-    # --- TAMBAHAN MAPEL BAHASA JAWA & ICT ---
     daftar_mapel = [
         "Matematika", "Bahasa Indonesia", "Bahasa Inggris", "Ilmu Pengetahuan Alam (IPA)", 
         "Ilmu Pengetahuan Sosial (IPS)", "Pendidikan Agama", "PPKn", 
@@ -421,24 +487,6 @@ st.header(t["board_header"])
 
 df_students_master = get_all_data()
 
-# Kamus Password (Kunci Mapel)
-kunci_guru = {
-    "passMTK": "Matematika",
-    "passBINDO": "Bahasa Indonesia",
-    "passBING": "Bahasa Inggris",
-    "passIPA": "Ilmu Pengetahuan Alam (IPA)",
-    "passIPS": "Ilmu Pengetahuan Sosial (IPS)",
-    "passAGAMA": "Pendidikan Agama",
-    "passPKN": "PPKn",
-    "passSENI": "Seni Budaya",
-    "passPJOK": "PJOK",
-    "passPRAKARYA": "Prakarya",
-    "passJAWA": "Bahasa Jawa",
-    "passICT": "ICT",
-    "passBK": "Bimbingan Konseling",
-    "adminSUPER": "Semua Mapel" # Akses Kepala Sekolah/Admin
-}
-
 if not df_students_master.empty:
     
     st.subheader(t["pass_header"])
@@ -446,13 +494,15 @@ if not df_students_master.empty:
     
     password_guru = st.text_input(t["pass_input"], type="password")
     
-    if password_guru in kunci_guru:
-        mapel_terkunci = kunci_guru[password_guru]
+    # Mengecek ke dalam database apakah password ini ada pemiliknya
+    mapel_terkunci = get_mapel_by_password(password_guru)
+    
+    if mapel_terkunci:
         st.success(t["pass_success"].format(mapel_terkunci))
         st.divider()
         
-        # Proses Penyaringan Data Otomatis Berdasarkan Password
-        if password_guru == "adminSUPER":
+        # Proses Penyaringan Data Otomatis
+        if mapel_terkunci == "Semua Mapel":
             df_students = df_students_master
             judul_analitik = "Seluruh Sekolah"
         else:
@@ -532,7 +582,27 @@ if not df_students_master.empty:
                     file_name=f'Data_Mentah_{judul_analitik}.csv',
                     mime='text/csv'
                 )
-            
+        
+        # --- FITUR BARU: UBAH KATA SANDI ---
+        st.divider()
+        st.subheader(t["change_pass_header"])
+        st.info(t["change_pass_desc"])
+        
+        # Menggunakan kolom agar formnya tidak terlalu lebar
+        col_form, _ = st.columns([2, 1])
+        with col_form:
+            with st.form("form_ubah_sandi"):
+                new_pass = st.text_input(t["new_pass_input"], type="password")
+                if st.form_submit_button(t["btn_save_pass"]):
+                    if new_pass.strip() == "":
+                        st.error("Kata sandi tidak boleh kosong!")
+                    else:
+                        berhasil_diubah = update_password(mapel_terkunci, new_pass)
+                        if berhasil_diubah:
+                            st.success(t["pass_changed_success"])
+                        else:
+                            st.error(t["pass_changed_error"])
+
     elif password_guru != "":
         st.error(t["pass_error"])
 else:
