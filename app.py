@@ -115,6 +115,8 @@ if language == "Indonesia":
         "bg_color": "Pilih Warna Latar Web:",
         "help_center": "📖 Pusat Bantuan",
         "btn_dl_guide": "📥 Download Panduan Penggunaan",
+        "leaderboard_header": "🏆 Top 5 Siswa Paling Konsisten",
+        "leaderboard_desc": "Apresiasi untuk siswa yang paling rajin merefleksikan pembelajarannya:",
         "student_profile": "Profil Siswa",
         "subject": "Mata Pelajaran:",
         "date": "Tanggal:",
@@ -177,6 +179,8 @@ else:
         "bg_color": "Select Web Background Color:",
         "help_center": "📖 Help Center",
         "btn_dl_guide": "📥 Download User Guide",
+        "leaderboard_header": "🏆 Top 5 Most Consistent Students",
+        "leaderboard_desc": "Appreciation for the students who are most diligent in reflecting on their learning:",
         "student_profile": "Student Profile",
         "subject": "Subject:",
         "date": "Date:",
@@ -245,7 +249,6 @@ def generate_pdf_report(df, feeling_counts, teks, nama_mapel, tgl_mulai, tgl_akh
     pdf.set_font("Arial", "B", 16)
     pdf.cell(200, 10, txt=judul_dinamis, ln=True, align='C')
     
-    # Menambahkan informasi rentang waktu di laporan PDF
     pdf.set_font("Arial", "I", 11)
     teks_periode = f"Periode: {tgl_mulai.strftime('%d/%m/%Y')} - {tgl_akhir.strftime('%d/%m/%Y')}"
     pdf.cell(200, 8, txt=teks_periode, ln=True, align='C')
@@ -433,6 +436,26 @@ with col_judul:
 
 st.divider()
 
+# --- FITUR BARU: PAPAN PERINGKAT (LEADERBOARD) ---
+df_semua = get_all_data()
+if not df_semua.empty:
+    with st.expander(t["leaderboard_header"], expanded=True):
+        st.write(t["leaderboard_desc"])
+        
+        # Menghitung jumlah jurnal per nama siswa (menggabungkan nama dan kelas agar jelas)
+        df_semua['nama_kelas'] = df_semua['name'] + " (" + df_semua['kelas'] + ")"
+        peringkat = df_semua['nama_kelas'].value_counts().head(5)
+        
+        # Menampilkan dalam bentuk metrik berjajar
+        kolom_juara = st.columns(len(peringkat))
+        medali = ["🥇", "🥈", "🥉", "🏅", "🏅"]
+        
+        for i, (nama, jumlah) in enumerate(peringkat.items()):
+            with kolom_juara[i]:
+                st.metric(label=f"{medali[i]} {nama}", value=f"{jumlah} Jurnal")
+# -------------------------------------------------
+
+
 with st.form("pennant_form", clear_on_submit=True):
     st.subheader(t["student_profile"])
     
@@ -518,11 +541,10 @@ if not df_students_master.empty:
         if df_students_mapel.empty:
             st.info(t["no_data"])
         else:
-            # 2. PENYARINGAN RENTANG WAKTU (MINGGUAN/BULANAN)
+            # 2. PENYARINGAN RENTANG WAKTU
             st.subheader(t["filter_time_header"])
             st.write(t["filter_time_desc"])
             
-            # Mengubah format waktu string menjadi format Tanggal sungguhan agar bisa dihitung
             df_students_mapel['tanggal_asli'] = pd.to_datetime(df_students_mapel['waktu_lengkap']).dt.date
             tanggal_terawal = df_students_mapel['tanggal_asli'].min()
             tanggal_terakhir = df_students_mapel['tanggal_asli'].max()
@@ -533,14 +555,12 @@ if not df_students_master.empty:
             with col_end:
                 end_date = st.date_input(t["end_date"], tanggal_terakhir)
             
-            # Menyaring data berdasarkan tanggal yang dipilih guru
             mask = (df_students_mapel['tanggal_asli'] >= start_date) & (df_students_mapel['tanggal_asli'] <= end_date)
             df_filtered = df_students_mapel.loc[mask]
             
             if df_filtered.empty:
                 st.warning(t["no_date_data"])
             else:
-                # SEMUA GRAFIK & PDF SEKARANG MENGGUNAKAN DATA YANG SUDAH DISARING (df_filtered)
                 st.divider()
                 st.subheader(t["chart_header"].format(judul_analitik))
                 feeling_counts = df_filtered['feeling'].value_counts()
@@ -605,7 +625,6 @@ if not df_students_master.empty:
                     )
                     
                 with col_csv:
-                    # Menghapus kolom 'tanggal_asli' buatan sistem sebelum diunduh agar rapi
                     csv_export = df_filtered.drop(columns=['tanggal_asli'])
                     csv_data = csv_export.to_csv(index=False).encode('utf-8')
                     st.download_button(
