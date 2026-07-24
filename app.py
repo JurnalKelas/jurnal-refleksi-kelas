@@ -420,17 +420,31 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-col_logo, col_judul = st.columns([1, 4])
+# --- PEMBARUAN TATA LETAK: DUA LOGO ---
+# Membagi bagian atas menjadi 3 kolom: kiri (1.5), tengah (5), kanan (1.5)
+col_logo_kiri, col_judul, col_logo_kanan = st.columns([1.5, 5, 1.5])
 
-with col_logo:
-    if os.path.exists("logo.png"):
+with col_logo_kiri:
+    # Cek logo di sudut kiri
+    if os.path.exists("logo_kiri.png"):
+        st.image("logo_kiri.png", use_column_width=True)
+    elif os.path.exists("logo_kiri.jpg"):
+        st.image("logo_kiri.jpg", use_column_width=True)
+    elif os.path.exists("logo.png"):
+        # Dukungan jika logo lama masih ada
         st.image("logo.png", use_column_width=True)
-    elif os.path.exists("logo.jpg"):
-        st.image("logo.jpg", use_column_width=True)
 
 with col_judul:
-    st.title(t["title"])
-    st.write(t["subtitle"])
+    # Memastikan teks judul berada persis di tengah
+    st.markdown(f"<h1 style='text-align: center;'>{t['title']}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center;'>{t['subtitle']}</p>", unsafe_allow_html=True)
+
+with col_logo_kanan:
+    # Cek logo di sudut kanan
+    if os.path.exists("logo_kanan.png"):
+        st.image("logo_kanan.png", use_column_width=True)
+    elif os.path.exists("logo_kanan.jpg"):
+        st.image("logo_kanan.jpg", use_column_width=True)
 
 st.divider()
 
@@ -591,7 +605,6 @@ if not df_students_master.empty:
                 st.subheader(t["export_header"])
                 st.write(t["export_desc"])
                 
-                # --- FITUR BARU: TOMBOL UNDUH PERINGKAT ---
                 col_pdf, col_csv, col_rank = st.columns(3)
                 
                 with col_pdf:
@@ -614,11 +627,10 @@ if not df_students_master.empty:
                     )
                     
                 with col_rank:
-                    # Menghitung peringkat berdasarkan data yang sudah difilter
                     df_filtered['nama_kelas'] = df_filtered['name'] + " (" + df_filtered['kelas'] + ")"
                     peringkat_df = df_filtered['nama_kelas'].value_counts().reset_index()
                     peringkat_df.columns = ['Nama Siswa (Kelas)', 'Jumlah Jurnal']
-                    peringkat_df.index = peringkat_df.index + 1 # Memulai nomor urut dari 1
+                    peringkat_df.index = peringkat_df.index + 1
                     
                     csv_peringkat = peringkat_df.to_csv(index_label='Peringkat').encode('utf-8')
                     st.download_button(
