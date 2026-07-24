@@ -221,7 +221,7 @@ else:
         "export_header": "💾 Export Class Report",
         "export_desc": "Download all student reflection data and leaderboard for your subject based on the time range above.",
         "btn_dl_all": "📥 Download Report (PDF)",
-        "btn_dl_csv": "📥 Download Data (CSV)",
+        "btn_dl_csv": "📥 Download Excel Data (CSV)",
         "btn_dl_rank": "📥 Download Leaderboard (CSV)",
         "no_data": "No data submitted yet for this subject.",
         "pdf_class_title": "Reflection Journal Report - {}", 
@@ -420,31 +420,24 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- PEMBARUAN TATA LETAK: DUA LOGO ---
-# Membagi bagian atas menjadi 3 kolom: kiri (1.5), tengah (5), kanan (1.5)
+# --- PEMBARUAN TATA LETAK: LOGO 1 DAN LOGO 2 ---
 col_logo_kiri, col_judul, col_logo_kanan = st.columns([1.5, 5, 1.5])
 
 with col_logo_kiri:
-    # Cek logo di sudut kiri
-    if os.path.exists("logo_kiri.png"):
-        st.image("logo_kiri.png", use_column_width=True)
-    elif os.path.exists("logo_kiri.jpg"):
-        st.image("logo_kiri.jpg", use_column_width=True)
-    elif os.path.exists("logo.png"):
-        # Dukungan jika logo lama masih ada
-        st.image("logo.png", use_column_width=True)
+    if os.path.exists("logo1.png"):
+        st.image("logo1.png", use_column_width=True)
+    elif os.path.exists("logo1.jpg"):
+        st.image("logo1.jpg", use_column_width=True)
 
 with col_judul:
-    # Memastikan teks judul berada persis di tengah
     st.markdown(f"<h1 style='text-align: center;'>{t['title']}</h1>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align: center;'>{t['subtitle']}</p>", unsafe_allow_html=True)
 
 with col_logo_kanan:
-    # Cek logo di sudut kanan
-    if os.path.exists("logo_kanan.png"):
-        st.image("logo_kanan.png", use_column_width=True)
-    elif os.path.exists("logo_kanan.jpg"):
-        st.image("logo_kanan.jpg", use_column_width=True)
+    if os.path.exists("logo2.png"):
+        st.image("logo2.png", use_column_width=True)
+    elif os.path.exists("logo2.jpg"):
+        st.image("logo2.jpg", use_column_width=True)
 
 st.divider()
 
