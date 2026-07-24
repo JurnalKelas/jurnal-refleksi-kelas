@@ -115,8 +115,6 @@ if language == "Indonesia":
         "bg_color": "Pilih Warna Latar Web:",
         "help_center": "📖 Pusat Bantuan",
         "btn_dl_guide": "📥 Download Panduan Penggunaan",
-        "leaderboard_header": "🏆 Top 5 Siswa Paling Konsisten",
-        "leaderboard_desc": "Apresiasi untuk siswa yang paling rajin merefleksikan pembelajarannya:",
         "student_profile": "Profil Siswa",
         "subject": "Mata Pelajaran:",
         "date": "Tanggal:",
@@ -158,9 +156,10 @@ if language == "Indonesia":
         "gallery_header": "📌 Galeri Jurnal Kelas",
         "gallery_desc": "Klik pada nama siswa untuk membaca detail refleksinya.",
         "export_header": "💾 Export Laporan Kelas",
-        "export_desc": "Unduh seluruh data refleksi siswa untuk mata pelajaran Anda sesuai rentang waktu di atas.",
+        "export_desc": "Unduh seluruh data refleksi dan peringkat siswa untuk mata pelajaran Anda sesuai rentang waktu di atas.",
         "btn_dl_all": "📥 Download Laporan (PDF)",
-        "btn_dl_csv": "📥 Download Data Excel (CSV)",
+        "btn_dl_csv": "📥 Download Data (CSV)",
+        "btn_dl_rank": "📥 Download Peringkat (CSV)",
         "no_data": "Belum ada data masuk untuk mata pelajaran ini.",
         "pdf_class_title": "Laporan Jurnal Refleksi - {}", 
         "pdf_ind_title": "Portofolio Jurnal: {}",
@@ -179,8 +178,6 @@ else:
         "bg_color": "Select Web Background Color:",
         "help_center": "📖 Help Center",
         "btn_dl_guide": "📥 Download User Guide",
-        "leaderboard_header": "🏆 Top 5 Most Consistent Students",
-        "leaderboard_desc": "Appreciation for the students who are most diligent in reflecting on their learning:",
         "student_profile": "Student Profile",
         "subject": "Subject:",
         "date": "Date:",
@@ -222,9 +219,10 @@ else:
         "gallery_header": "📌 Class Journal Gallery",
         "gallery_desc": "Click on a student's name to read their reflection details.",
         "export_header": "💾 Export Class Report",
-        "export_desc": "Download all student reflection data for your subject based on the time range above.",
+        "export_desc": "Download all student reflection data and leaderboard for your subject based on the time range above.",
         "btn_dl_all": "📥 Download Report (PDF)",
-        "btn_dl_csv": "📥 Download Excel Data (CSV)",
+        "btn_dl_csv": "📥 Download Data (CSV)",
+        "btn_dl_rank": "📥 Download Leaderboard (CSV)",
         "no_data": "No data submitted yet for this subject.",
         "pdf_class_title": "Reflection Journal Report - {}", 
         "pdf_ind_title": "Journal Portfolio: {}",
@@ -436,26 +434,6 @@ with col_judul:
 
 st.divider()
 
-# --- FITUR BARU: PAPAN PERINGKAT (LEADERBOARD) ---
-df_semua = get_all_data()
-if not df_semua.empty:
-    with st.expander(t["leaderboard_header"], expanded=True):
-        st.write(t["leaderboard_desc"])
-        
-        # Menghitung jumlah jurnal per nama siswa (menggabungkan nama dan kelas agar jelas)
-        df_semua['nama_kelas'] = df_semua['name'] + " (" + df_semua['kelas'] + ")"
-        peringkat = df_semua['nama_kelas'].value_counts().head(5)
-        
-        # Menampilkan dalam bentuk metrik berjajar
-        kolom_juara = st.columns(len(peringkat))
-        medali = ["🥇", "🥈", "🥉", "🏅", "🏅"]
-        
-        for i, (nama, jumlah) in enumerate(peringkat.items()):
-            with kolom_juara[i]:
-                st.metric(label=f"{medali[i]} {nama}", value=f"{jumlah} Jurnal")
-# -------------------------------------------------
-
-
 with st.form("pennant_form", clear_on_submit=True):
     st.subheader(t["student_profile"])
     
@@ -613,7 +591,8 @@ if not df_students_master.empty:
                 st.subheader(t["export_header"])
                 st.write(t["export_desc"])
                 
-                col_pdf, col_csv = st.columns(2)
+                # --- FITUR BARU: TOMBOL UNDUH PERINGKAT ---
+                col_pdf, col_csv, col_rank = st.columns(3)
                 
                 with col_pdf:
                     pdf_data = generate_pdf_report(df_filtered, feeling_counts, t, judul_analitik, start_date, end_date)
@@ -631,6 +610,21 @@ if not df_students_master.empty:
                         label=t["btn_dl_csv"],
                         data=csv_data,
                         file_name=f'Data_{judul_analitik}_{start_date}_hingga_{end_date}.csv',
+                        mime='text/csv'
+                    )
+                    
+                with col_rank:
+                    # Menghitung peringkat berdasarkan data yang sudah difilter
+                    df_filtered['nama_kelas'] = df_filtered['name'] + " (" + df_filtered['kelas'] + ")"
+                    peringkat_df = df_filtered['nama_kelas'].value_counts().reset_index()
+                    peringkat_df.columns = ['Nama Siswa (Kelas)', 'Jumlah Jurnal']
+                    peringkat_df.index = peringkat_df.index + 1 # Memulai nomor urut dari 1
+                    
+                    csv_peringkat = peringkat_df.to_csv(index_label='Peringkat').encode('utf-8')
+                    st.download_button(
+                        label=t["btn_dl_rank"],
+                        data=csv_peringkat,
+                        file_name=f'Peringkat_Siswa_{judul_analitik}_{start_date}_hingga_{end_date}.csv',
                         mime='text/csv'
                     )
         
